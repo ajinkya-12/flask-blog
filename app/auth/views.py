@@ -19,6 +19,9 @@ def login():
         flash('Invalid username or password')
     return render_template('auth/login.html', form=lform)
 
+#Add functionality for email confirmation email id change, password change, and password reset.
+#Need to look into Flask email tools
+
 @auth.route('/logout')
 @login_required
 def logout():
@@ -38,3 +41,5 @@ def register():
         flash('Registration complete. You can now login')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', form=rform)
+    
+    
