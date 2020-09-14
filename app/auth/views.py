@@ -1,5 +1,5 @@
 from flask import render_template, redirect, request, url_for, flash
-from flask_login import login_user, login_required, logout_user
+from flask_login import login_user, login_required, logout_user, current_user
 from . import auth
 from .forms import LoginForm, RegistrationForm
 from ..models import User
@@ -41,5 +41,11 @@ def register():
         flash('Registration complete. You can now login')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', form=rform)
+
+@auth.before_app_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.ping()
+        #Email confirm needs to be added here as well
     
     
