@@ -1,7 +1,7 @@
 import unittest
 from flask import current_app
 from app import create_app, db
-from app.models import User, AnonymousUser, Permission
+from app.models import User, Role, AnonymousUser, Permission
 
 class UserModelTestCase(unittest.TestCase):
     def setUp(self):
@@ -9,6 +9,7 @@ class UserModelTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         db.create_all()
+        Role.insert_role()
 
     def tearDown(self):
         db.session.remove()
@@ -36,7 +37,7 @@ class UserModelTestCase(unittest.TestCase):
 
     #Error in testing
     def test_user_role(self):
-        u = User(email='kim@example.com', password='momo')
+        u = User(username='Test', email='test@example.com', password='momo')
         self.assertTrue(u.can(Permission.FOLLOW))
         self.assertTrue(u.can(Permission.COMMENT))
         self.assertTrue(u.can(Permission.WRITE))

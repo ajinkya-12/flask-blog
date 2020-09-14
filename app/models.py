@@ -15,9 +15,9 @@ class Role(db.Model):
     __tablename__='roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    default = db.Column(db.Boolean, index=True)
+    default = db.Column(db.Boolean, default=False, index=True)
     permissions = db.Column(db.Integer)
-    user = db.relationship('User', backref='role', lazy='dynamic')
+    user = db.relationship('User', backref='user_role', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(Role,self).__init__(**kwargs)
@@ -25,7 +25,7 @@ class Role(db.Model):
             self.permissions = 0
 
     def __repr__(self):
-        return '<Role %r>' %self.name
+        return '<Role: {}, Permission: {}, Default: {}>'.format(self.name, self.permissions, self.default)
 
     def add_permission(self, perm):
         if not self.has_permission(perm):
@@ -42,13 +42,14 @@ class Role(db.Model):
         return self.permissions & perm == perm #Using bitwise operator as permissions are powers of two,
         #Check if bit exists
 
+    #We need to run this function to add roles to database. To run Role.insert_role()
     @staticmethod
     def insert_role():
         roles = {
             'User' : [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE],
             'Moderator' : [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE, Permission.MODERATE],
             'Administrator' : [Permission.FOLLOW, Permission.COMMENT, Permission.WRITE, Permission.MODERATE,
-            Permission.ADMIN]
+            Permission.ADMIN],
         }
         default_role = 'User'
         for r in roles:
@@ -61,7 +62,6 @@ class Role(db.Model):
             role.default = (role.name == default_role)
             db.session.add(role)
         db.session.commit()
-        #Problem with default role assignment
 
 #Database table for User
 class User(UserMixin, db.Model):
@@ -74,15 +74,14 @@ class User(UserMixin, db.Model):
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
-        if self.role is None:
+        if self.user_role is None:
             if self.email == current_app.config['APP_ADMIN']:
-                self.role = Role.query.filter_by(name = 'Administrator').first()
-            if self.role is None:
-                self.role = Role.query.filter_by(default = True).first()
-        #User is not taking the role default--- need attention
+                self.user_role = Role.query.filter_by(name = 'Administrator').first()
+            if self.user_role is None:
+                self.user_role = Role.query.filter_by(default = True).first()
 
     def can(self, perm):
-        return (self.role is not None) and (self.role.has_permission(perm))
+        return (self.user_role is not None) and (self.user_role.has_permission(perm))
 
     def is_administrator(self):
         return self.can(Permission.ADMIN)
@@ -99,7 +98,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return '<User %r>' %self.username
+        return '<User: {}, Role: {}>'.format(self.username, self.user_role)
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, perm):
